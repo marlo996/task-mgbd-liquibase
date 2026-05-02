@@ -1,0 +1,35 @@
+version: "3.8"
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: mgbd_postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres123
+      POSTGRES_DB: mgbd_liquibase
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  liquibase:
+    image: liquibase/liquibase:4.27
+    container_name: mgbd_liquibase
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./db/changelog:/liquibase/changelog
+      - ./liquibase.properties:/liquibase/liquibase.properties
+    working_dir: /liquibase
+    entrypoint: ["liquibase"]
+    command: ["update"]
+
+volumes:
+  pgdata:
